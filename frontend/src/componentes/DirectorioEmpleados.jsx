@@ -238,7 +238,7 @@ export function DirectorioEmpleados({
     {
       titulo: textos.rolesAdicionalesResumen,
       valor: directorio.estadisticas.roles_adicionales,
-      apoyo: textos.directorioSubtitulo,
+      apoyo: textos.directorioFuncionesExtraAyuda,
       icono: BriefcaseBusiness,
     },
     {

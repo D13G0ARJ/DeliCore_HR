@@ -236,15 +236,6 @@ function VistaDashboard({ panel, textos, alCambiarVista }) {
   const focoKpis = panel.puestos_destacados.slice(0, 4)
   const seguimientos = panel.seguimiento_operativo ?? []
   const porcentajeCumplimiento = extraerPorcentaje(resumenCumplimiento?.valor)
-  const coberturaPromedio =
-    panel.departamentos.length > 0
-      ? Math.round(
-          panel.departamentos.reduce(
-            (acumulado, departamento) => acumulado + (departamento.cobertura_kpi ?? 0),
-            0,
-          ) / panel.departamentos.length,
-        )
-      : 0
 
   return (
     <div className="space-y-6">
@@ -271,26 +262,26 @@ function VistaDashboard({ panel, textos, alCambiarVista }) {
               <div className="mt-6 grid gap-3 sm:grid-cols-3">
                 <div className="rounded-[22px] bg-slate-50 px-4 py-4 dark:bg-slate-950/50">
                   <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    {textos.empleadosActivos}
+                    {textos.puestosActivos}
                   </p>
                   <p className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
-                    {panel.metricas_contexto.empleados_activos}
+                    {panel.metricas_contexto.puestos_activos}
                   </p>
                 </div>
                 <div className="rounded-[22px] bg-slate-50 px-4 py-4 dark:bg-slate-950/50">
                   <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    {textos.rolesAdicionalesResumen}
+                    {textos.puestosSinKpi}
                   </p>
                   <p className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
-                    {panel.metricas_contexto.roles_multiples}
+                    {panel.metricas_contexto.puestos_sin_kpi}
                   </p>
                 </div>
                 <div className="rounded-[22px] bg-slate-50 px-4 py-4 dark:bg-slate-950/50">
                   <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    {textos.seguimientosPendientes}
+                    {textos.cumplimientoSemanal}
                   </p>
                   <p className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
-                    {panel.metricas_contexto.seguimientos_pendientes}
+                    {resumenCumplimiento.valor}
                   </p>
                 </div>
               </div>
@@ -319,10 +310,18 @@ function VistaDashboard({ panel, textos, alCambiarVista }) {
                   <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[360px]">
                     <div className="rounded-[22px] border border-slate-200/80 bg-white/80 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/70">
                       <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                        {textos.coberturaKpi}
+                        {textos.puestosConKpi}
                       </p>
                       <p className="mt-2 text-2xl font-black tracking-tight text-slate-950 dark:text-white">
-                        {coberturaPromedio}%
+                        {panel.metricas_contexto.puestos_con_kpi}
+                      </p>
+                    </div>
+                    <div className="rounded-[22px] border border-slate-200/80 bg-white/80 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/70">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                        {textos.departamentosActivos}
+                      </p>
+                      <p className="mt-2 text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+                        {panel.metricas_contexto.departamentos_activos}
                       </p>
                     </div>
                     <div className="rounded-[22px] border border-slate-200/80 bg-white/80 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/70">
@@ -333,20 +332,12 @@ function VistaDashboard({ panel, textos, alCambiarVista }) {
                         {panel.metricas_contexto.seguimientos_pendientes}
                       </p>
                     </div>
-                    <div className="rounded-[22px] border border-slate-200/80 bg-white/80 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/70">
-                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                        {textos.rolesAdicionalesResumen}
-                      </p>
-                      <p className="mt-2 text-2xl font-black tracking-tight text-slate-950 dark:text-white">
-                        {panel.metricas_contexto.roles_multiples}
-                      </p>
-                    </div>
                   </div>
                 </div>
 
                 <div className="mt-5">
                   <div className="mb-2 flex items-center justify-between text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    <span>{textos.cumplimiento}</span>
+                    <span>{textos.cumplimientoSemanal}</span>
                     <span>{resumenCumplimiento.valor}</span>
                   </div>
                   <div className="h-3 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
@@ -362,6 +353,9 @@ function VistaDashboard({ panel, textos, alCambiarVista }) {
                         '{seguimientosPendientes}',
                         panel.metricas_contexto.seguimientos_pendientes,
                       )}
+                  </p>
+                  <p className="mt-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                    {resumenCumplimiento.detalle}
                   </p>
                 </div>
               </div>
