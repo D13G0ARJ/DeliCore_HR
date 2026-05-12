@@ -1,0 +1,99 @@
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000/api'
+
+export async function obtenerPanelGeneral() {
+  const respuesta = await fetch(`${API_URL}/panel-general`)
+
+  if (!respuesta.ok) {
+    throw new Error('No fue posible obtener el panel general.')
+  }
+
+  return respuesta.json()
+}
+
+export async function obtenerDirectorioEmpleados() {
+  const respuesta = await fetch(`${API_URL}/directorio-empleados`)
+
+  if (!respuesta.ok) {
+    throw new Error('No fue posible obtener el directorio de empleados.')
+  }
+
+  return respuesta.json()
+}
+
+export async function obtenerPerfilTalento() {
+  const respuesta = await fetch(`${API_URL}/perfil-talento`)
+
+  if (!respuesta.ok) {
+    throw new Error('No fue posible obtener el perfil de talento.')
+  }
+
+  return respuesta.json()
+}
+
+export async function obtenerCentroKpis() {
+  const respuesta = await fetch(`${API_URL}/centro-kpis`)
+
+  if (!respuesta.ok) {
+    throw new Error('No fue posible obtener el centro de KPIs.')
+  }
+
+  return respuesta.json()
+}
+
+export async function actualizarSeguimientoKpi(id, completado) {
+  const respuesta = await fetch(`${API_URL}/centro-kpis/seguimientos/${id}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({ completado }),
+  })
+
+  if (!respuesta.ok) {
+    throw new Error('No fue posible actualizar el seguimiento KPI.')
+  }
+
+  return respuesta.json()
+}
+
+export async function obtenerAsistenteIaRol(idioma = 'es') {
+  const respuesta = await fetch(`${API_URL}/asistente-ia-rol?idioma=${idioma}`)
+
+  if (!respuesta.ok) {
+    throw new Error('No fue posible obtener el asistente IA por rol.')
+  }
+
+  return respuesta.json()
+}
+
+export async function consultarAsistenteIaRol({ puestoId, pregunta, idioma = 'es' }) {
+  const respuesta = await fetch(`${API_URL}/asistente-ia-rol/consultar`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({
+      puesto_id: puestoId,
+      pregunta,
+      idioma,
+    }),
+  })
+
+  if (!respuesta.ok) {
+    throw new Error('No fue posible obtener el asistente IA por rol.')
+  }
+
+  return respuesta.json()
+}
+
+export async function obtenerOrganigrama() {
+  const respuesta = await fetch(`${API_URL}/organigrama`)
+
+  if (!respuesta.ok) {
+    throw new Error('No fue posible obtener el organigrama.')
+  }
+
+  return respuesta.json()
+}
