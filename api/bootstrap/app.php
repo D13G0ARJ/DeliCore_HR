@@ -12,7 +12,15 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $trustedProxies = env('TRUSTED_PROXIES');
+
+        if (! empty($trustedProxies)) {
+            $at = $trustedProxies === '*'
+                ? '*'
+                : array_values(array_filter(array_map('trim', explode(',', $trustedProxies))));
+
+            $middleware->trustProxies(at: $at);
+        }
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
