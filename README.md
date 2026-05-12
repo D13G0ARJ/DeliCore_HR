@@ -86,38 +86,143 @@ Interfaz de consulta contextual donde cada rol dispone de un asistente que respo
 - React Flow
 - Dagre
 
-## Instalacion rapida
+## Ejecucion local
+
+### Requisitos previos
+
+- PHP 8.2 o superior
+- Composer
+- Node.js 20 o superior
+- npm
+- MySQL o PostgreSQL
 
 ### 1. Clonar el proyecto
 
 ```bash
-git clone <repositorio>
+git clone <https://github.com/D13G0ARJ/DeliCore_HR>
 cd "queso las delicias"
 ```
 
-### 2. Backend
+### 2. Configurar backend Laravel
+
+Entrar a la carpeta de la API:
 
 ```bash
 cd api
+```
+
+Instalar dependencias:
+
+```bash
 composer install
+```
+
+Crear el archivo de entorno:
+
+```bash
 copy .env.example .env
+```
+
+Editar `api/.env` y configurar como minimo:
+
+```env
+APP_NAME="Delicore HR"
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=http://127.0.0.1:8000
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=queso_delicias
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+Si prefieres PostgreSQL:
+
+```env
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=queso_delicias
+DB_USERNAME=postgres
+DB_PASSWORD=tu_clave
+```
+
+Generar llave, correr migraciones y sembrar la demo:
+
+```bash
 php artisan key:generate
 php artisan migrate:fresh --seed
+```
+
+Levantar la API:
+
+```bash
 php artisan serve
 ```
 
-### 3. Frontend
+La API quedara disponible en:
+
+- `http://127.0.0.1:8000`
+- `http://127.0.0.1:8000/api`
+
+### 3. Configurar frontend React
+
+Abrir otra terminal y entrar a la SPA:
 
 ```bash
-cd ../frontend
+cd frontend
+```
+
+Instalar dependencias:
+
+```bash
 npm install
+```
+
+Crear un archivo `frontend/.env` con:
+
+```env
+VITE_API_URL=http://127.0.0.1:8000/api
+```
+
+Levantar el entorno de desarrollo:
+
+```bash
 npm run dev
 ```
 
-## URL de trabajo esperadas
+El frontend quedara disponible normalmente en:
 
-- Backend API: `http://127.0.0.1:8000/api`
-- Frontend SPA: `http://localhost:5173`
+- `http://localhost:5173`
+
+### 4. Comandos utiles
+
+Backend:
+
+```bash
+php artisan migrate:fresh --seed
+php artisan route:list
+php artisan serve
+```
+
+Frontend:
+
+```bash
+npm run dev
+npm run build
+npm run preview
+```
+
+### 5. Flujo recomendado para validar la demo
+
+1. Levantar la base de datos local.
+2. Ejecutar la API Laravel en `http://127.0.0.1:8000`.
+3. Ejecutar la SPA React en `http://localhost:5173`.
+4. Ingresar con el login visual mock.
+5. Recorrer Dashboard, Organigrama, Directorio, Perfil, KPIs y Asistente IA.
 
 ## Estado del MVP
 

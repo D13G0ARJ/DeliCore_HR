@@ -1,5 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Avatar, ConfigProvider, theme as antdTheme } from 'antd'
+import {
+  AlertTriangle,
+  ArrowRight,
+  Bot,
+  BriefcaseBusiness,
+  Building2,
+  ChartColumn,
+  CircleAlert,
+  CircleCheckBig,
+  ClipboardList,
+  Network,
+  Users,
+} from 'lucide-react'
 import './App.css'
 import { AsistenteIaRol } from './componentes/AsistenteIaRol'
 import { CentroKpis } from './componentes/CentroKpis'
@@ -27,185 +40,510 @@ import {
   traducciones,
 } from './traducciones'
 
+const mapaIconosResumen = {
+  empleados: Users,
+  roles: BriefcaseBusiness,
+  kpis: ChartColumn,
+  seguimiento: ClipboardList,
+  cumplimiento: CircleCheckBig,
+}
+
+function extraerPorcentaje(valor = '0%') {
+  const coincidencia = String(valor).match(/\d+/)
+  return Number(coincidencia?.[0] ?? 0)
+}
+
 function TarjetaResumen({ item }) {
+  const Icono = mapaIconosResumen[item.id] ?? ChartColumn
+
   return (
-    <article className="rounded-[28px] border border-slate-200/80 bg-white p-6 shadow-soft transition dark:border-slate-800 dark:bg-slate-900">
-      <span className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-        {item.titulo}
-      </span>
-      <strong className="mt-4 block text-4xl font-black tracking-tight text-slate-950 dark:text-white">
-        {item.valor}
-      </strong>
-      <p className="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-300">{item.detalle}</p>
-      <small className="mt-4 block font-semibold text-cyan-700 dark:text-cyan-300">
+    <article className="rounded-[28px] border border-slate-200/80 bg-white p-5 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+            {item.titulo}
+          </span>
+          <strong className="mt-3 block text-4xl font-black tracking-tight text-slate-950 dark:text-white">
+            {item.valor}
+          </strong>
+        </div>
+
+        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-100">
+          <Icono size={22} />
+        </span>
+      </div>
+
+      <p className="mt-4 min-h-[48px] text-sm leading-6 text-slate-600 dark:text-slate-300">
+        {item.detalle}
+      </p>
+
+      <div className="mt-4 rounded-2xl bg-cyan-50 px-3 py-2 text-sm font-semibold text-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-300">
         {item.tendencia}
-      </small>
+      </div>
     </article>
   )
 }
 
-function VistaDashboard({ panel, textos }) {
+function TarjetaAccion({ icono: Icono, titulo, descripcion, onClick }) {
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-sm font-semibold uppercase tracking-[0.22em] text-cyan-700 dark:text-cyan-300">
-          {textos.vistaDashboard}
-        </p>
-        <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950 dark:text-white">
-          {textos.navDashboard}
-        </h2>
+    <button
+      type="button"
+      onClick={onClick}
+      className="group rounded-[24px] border border-slate-200/80 bg-white/90 p-4 text-left shadow-soft transition hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900/90"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-100">
+          <Icono size={20} />
+        </span>
+        <ArrowRight
+          size={18}
+          className="mt-1 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-slate-700 dark:group-hover:text-slate-200"
+        />
+      </div>
+      <h3 className="mt-4 text-lg font-black tracking-tight text-slate-950 dark:text-white">
+        {titulo}
+      </h3>
+      <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{descripcion}</p>
+    </button>
+  )
+}
+
+function TarjetaArea({ area, textos }) {
+  return (
+    <article className="rounded-[26px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-950/50">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h4 className="text-lg font-black tracking-tight text-slate-950 dark:text-white">
+            {area.nombre}
+          </h4>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+            {textos.lider}: {area.lider || 'N/A'}
+          </p>
+        </div>
+
+        <div className="rounded-2xl bg-white px-3 py-2 text-right shadow-sm dark:bg-slate-900">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+            {textos.coberturaKpi}
+          </p>
+          <p className="mt-1 text-lg font-black text-slate-950 dark:text-white">{area.cobertura_kpi}%</p>
+        </div>
       </div>
 
-      <section className="grid gap-5 xl:grid-cols-4 md:grid-cols-2">
-        {panel.resumen.map((item) => (
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-2xl bg-white px-4 py-3 dark:bg-slate-900">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+            {textos.puestosActivos}
+          </p>
+          <p className="mt-1 text-xl font-black text-slate-950 dark:text-white">{area.puestos}</p>
+        </div>
+        <div className="rounded-2xl bg-white px-4 py-3 dark:bg-slate-900">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+            {textos.empleadosActivos}
+          </p>
+          <p className="mt-1 text-xl font-black text-slate-950 dark:text-white">{area.empleados}</p>
+        </div>
+      </div>
+
+      <p className="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-300">{area.meta}</p>
+    </article>
+  )
+}
+
+function TarjetaFocoKpi({ puesto, textos }) {
+  return (
+    <article className="rounded-[24px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-950/50">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h4 className="text-base font-black tracking-tight text-slate-950 dark:text-white">
+            {puesto.nombre}
+          </h4>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+            {puesto.empleado || textos.superAdmin}
+          </p>
+        </div>
+        <span className="rounded-full bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-slate-600 shadow-sm dark:bg-slate-900 dark:text-slate-300">
+          {puesto.progreso}%
+        </span>
+      </div>
+
+      <div className="mt-4 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+        <p>
+          {textos.departamentoSingular}: <span className="font-semibold">{puesto.departamento}</span>
+        </p>
+        <p>
+          {textos.kpiPrincipal}: <span className="font-semibold">{puesto.kpi_principal}</span>
+        </p>
+        <p>
+          {textos.frecuencia}: <span className="font-semibold">{puesto.frecuencia}</span>
+        </p>
+      </div>
+
+      <div className="mt-4">
+        <div className="mb-2 flex items-center justify-between text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+          <span>{textos.cumplimiento}</span>
+          <span>{puesto.progreso}%</span>
+        </div>
+        <div className="h-2.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-600"
+            style={{ width: `${puesto.progreso}%` }}
+          />
+        </div>
+      </div>
+    </article>
+  )
+}
+
+function TarjetaSeguimiento({ item, textos }) {
+  return (
+    <article className="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-950/50">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h4 className="text-sm font-black tracking-tight text-slate-950 dark:text-white">
+            {item.titulo}
+          </h4>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{item.empleado}</p>
+        </div>
+        <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+          {item.frecuencia}
+        </span>
+      </div>
+
+      <div className="mt-4 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+        <p>
+          {textos.puesto}: <span className="font-semibold">{item.puesto}</span>
+        </p>
+        <p>
+          {textos.departamentoSingular}: <span className="font-semibold">{item.departamento}</span>
+        </p>
+        <p>
+          {textos.kpiPrincipal}: <span className="font-semibold">{item.kpi}</span>
+        </p>
+        <p>
+          {textos.fechaIngreso}: <span className="font-semibold">{item.fecha}</span>
+        </p>
+      </div>
+    </article>
+  )
+}
+
+function VistaDashboard({ panel, textos, alCambiarVista }) {
+  const resumenPrincipal = panel.resumen.slice(0, 4)
+  const resumenCumplimiento = panel.resumen.find((item) => item.id === 'cumplimiento') ?? {
+    valor: '0%',
+    detalle: '',
+  }
+  const focoKpis = panel.puestos_destacados.slice(0, 4)
+  const seguimientos = panel.seguimiento_operativo ?? []
+  const porcentajeCumplimiento = extraerPorcentaje(resumenCumplimiento?.valor)
+  const coberturaPromedio =
+    panel.departamentos.length > 0
+      ? Math.round(
+          panel.departamentos.reduce(
+            (acumulado, departamento) => acumulado + (departamento.cobertura_kpi ?? 0),
+            0,
+          ) / panel.departamentos.length,
+        )
+      : 0
+
+  return (
+    <div className="space-y-6">
+      <section>
+        <article className="overflow-hidden rounded-[34px] border border-slate-200/80 bg-white p-7 shadow-soft dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="inline-flex rounded-full bg-cyan-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-300">
+              {textos.vistaDashboard}
+            </span>
+            <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              {panel.empresa.industria}
+            </span>
+          </div>
+
+          <div className="mt-5 grid gap-8 xl:grid-cols-[1.2fr_0.8fr]">
+            <div>
+              <h2 className="text-4xl font-black tracking-tight text-slate-950 dark:text-white">
+                {panel.empresa.nombre}
+              </h2>
+              <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">
+                {panel.empresa.objetivo}
+              </p>
+
+              <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-[22px] bg-slate-50 px-4 py-4 dark:bg-slate-950/50">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    {textos.empleadosActivos}
+                  </p>
+                  <p className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
+                    {panel.metricas_contexto.empleados_activos}
+                  </p>
+                </div>
+                <div className="rounded-[22px] bg-slate-50 px-4 py-4 dark:bg-slate-950/50">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    {textos.rolesAdicionalesResumen}
+                  </p>
+                  <p className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
+                    {panel.metricas_contexto.roles_multiples}
+                  </p>
+                </div>
+                <div className="rounded-[22px] bg-slate-50 px-4 py-4 dark:bg-slate-950/50">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    {textos.seguimientosPendientes}
+                  </p>
+                  <p className="mt-2 text-2xl font-black text-slate-950 dark:text-white">
+                    {panel.metricas_contexto.seguimientos_pendientes}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 rounded-[28px] border border-slate-200/80 bg-slate-50/90 p-5 dark:border-slate-800 dark:bg-slate-950/50">
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                  <div className="xl:max-w-xl">
+                    <div className="flex items-center gap-3">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                        {textos.cumplimiento}
+                      </p>
+                      <span className="rounded-full bg-cyan-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-300">
+                        {resumenCumplimiento.valor}
+                      </span>
+                    </div>
+                    <h3 className="mt-2 text-xl font-black tracking-tight text-slate-950 dark:text-white">
+                      {textos.lecturaEjecutiva}
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                      {textos.dashboardNarrativaUno
+                        .replace('{puestosConKpi}', panel.metricas_contexto.puestos_con_kpi)
+                        .replace('{puestosActivos}', panel.metricas_contexto.puestos_activos)}
+                    </p>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[360px]">
+                    <div className="rounded-[22px] border border-slate-200/80 bg-white/80 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/70">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                        {textos.coberturaKpi}
+                      </p>
+                      <p className="mt-2 text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+                        {coberturaPromedio}%
+                      </p>
+                    </div>
+                    <div className="rounded-[22px] border border-slate-200/80 bg-white/80 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/70">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                        {textos.seguimientoOperativo}
+                      </p>
+                      <p className="mt-2 text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+                        {panel.metricas_contexto.seguimientos_pendientes}
+                      </p>
+                    </div>
+                    <div className="rounded-[22px] border border-slate-200/80 bg-white/80 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/70">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                        {textos.rolesAdicionalesResumen}
+                      </p>
+                      <p className="mt-2 text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+                        {panel.metricas_contexto.roles_multiples}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-5">
+                  <div className="mb-2 flex items-center justify-between text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    <span>{textos.cumplimiento}</span>
+                    <span>{resumenCumplimiento.valor}</span>
+                  </div>
+                  <div className="h-3 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600"
+                      style={{ width: `${porcentajeCumplimiento}%` }}
+                    />
+                  </div>
+                  <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                    {textos.dashboardNarrativaDos
+                      .replace('{rolesMultiples}', panel.metricas_contexto.roles_multiples)
+                      .replace(
+                        '{seguimientosPendientes}',
+                        panel.metricas_contexto.seguimientos_pendientes,
+                      )}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-3">
+              <TarjetaAccion
+                icono={Network}
+                titulo={textos.navOrganigrama}
+                descripcion={textos.clickPerfil}
+                onClick={() => alCambiarVista('organigrama')}
+              />
+              <TarjetaAccion
+                icono={ChartColumn}
+                titulo={textos.navKpis}
+                descripcion={textos.centroKpisSubtitulo}
+                onClick={() => alCambiarVista('kpis')}
+              />
+              <TarjetaAccion
+                icono={Bot}
+                titulo={textos.navIa}
+                descripcion={panel.asistente_ia.capacidad}
+                onClick={() => alCambiarVista('ia')}
+              />
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-4">
+        {resumenPrincipal.map((item) => (
           <TarjetaResumen key={item.id} item={item} />
         ))}
       </section>
 
-      <section className="rounded-[30px] border border-slate-200/80 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-900">
-        <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr_1.2fr]">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-              {textos.empresa}
-            </span>
-            <h3 className="mt-3 text-3xl font-black tracking-tight text-slate-950 dark:text-white">
-              {panel.empresa.nombre}
-            </h3>
-          </div>
-          <div>
-            <span className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-              {textos.industria}
-            </span>
-            <p className="mt-3 text-sm leading-6 text-slate-700 dark:text-slate-300">
-              {panel.empresa.industria}
-            </p>
-          </div>
-          <div>
-            <span className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-              {textos.objetivo}
-            </span>
-            <p className="mt-3 text-sm leading-6 text-slate-700 dark:text-slate-300">
-              {panel.empresa.objetivo}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-5 xl:grid-cols-2">
+      <section className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
         <article className="rounded-[30px] border border-slate-200/80 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-900">
-          <div className="mb-5 flex items-center justify-between">
-            <h3 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">
-              {textos.departamentos}
-            </h3>
-            <span className="text-sm font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+          <div className="mb-5 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                {textos.departamentos}
+              </p>
+              <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+                {textos.resumen}
+              </h3>
+            </div>
+            <span className="rounded-full bg-slate-100 px-3 py-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-700 dark:bg-slate-800 dark:text-slate-300">
               {panel.departamentos.length} {textos.listo}
             </span>
           </div>
 
-          <div className="space-y-4">
+          <div className="grid gap-4 xl:grid-cols-3">
             {panel.departamentos.map((departamento) => (
-              <div
-                key={departamento.nombre}
-                className="flex flex-col gap-4 rounded-[24px] border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/50 xl:flex-row xl:justify-between"
-              >
-                <div>
-                  <h4 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">
-                    {departamento.nombre}
-                  </h4>
-                  <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                    {textos.lider}: {departamento.lider || 'N/A'}
-                  </p>
-                </div>
+              <TarjetaArea key={departamento.nombre} area={departamento} textos={textos} />
+            ))}
+          </div>
+        </article>
 
-                <div className="xl:max-w-xs">
-                  <span className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    {textos.estado}
-                  </span>
-                  <p className="mt-2 font-bold text-slate-950 dark:text-white">
-                    {departamento.estado}
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-cyan-700 dark:text-cyan-300">
-                    {departamento.meta}
-                  </p>
-                </div>
+        <div className="grid gap-5">
+          <article className="rounded-[30px] border border-slate-200/80 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-900">
+            <div className="mb-5 flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                <ChartColumn size={20} />
+              </span>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                  {textos.kpiPrincipal}
+                </p>
+                <h3 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+                  {textos.puestos}
+                </h3>
+              </div>
+            </div>
+
+            {focoKpis.length === 0 ? (
+              <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-400">
+                {textos.sinKpis}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {focoKpis.map((puesto) => (
+                  <TarjetaFocoKpi key={`${puesto.nombre}-${puesto.kpi_principal}`} puesto={puesto} textos={textos} />
+                ))}
+              </div>
+            )}
+          </article>
+
+          <article className="rounded-[30px] border border-slate-200/80 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-900">
+            <div className="mb-5 flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                <CircleAlert size={20} />
+              </span>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                  {textos.seguimientoOperativo}
+                </p>
+                <h3 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+                  {textos.seguimientosPendientes}
+                </h3>
+              </div>
+            </div>
+
+            {seguimientos.length === 0 ? (
+              <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-400">
+                {textos.sinSeguimientos}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {seguimientos.map((item) => (
+                  <TarjetaSeguimiento key={item.id} item={item} textos={textos} />
+                ))}
+              </div>
+            )}
+          </article>
+        </div>
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-[1fr_0.85fr]">
+        <article className="rounded-[30px] border border-slate-200/80 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">
+              <AlertTriangle size={20} />
+            </span>
+            <h3 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+              {textos.alertas}
+            </h3>
+          </div>
+          <div className="mt-5 grid gap-3">
+            {panel.alertas.map((alerta) => (
+              <div
+                key={alerta}
+                className="rounded-[22px] border border-slate-200/80 bg-slate-50 px-4 py-4 text-sm leading-6 text-slate-700 dark:border-slate-800 dark:bg-slate-950/50 dark:text-slate-300"
+              >
+                {alerta}
               </div>
             ))}
           </div>
         </article>
 
         <article className="rounded-[30px] border border-slate-200/80 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-900">
-          <div className="mb-5">
-            <h3 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">
-              {textos.puestos}
-            </h3>
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-100 text-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-300">
+              <Bot size={20} />
+            </span>
+            <div>
+              <h3 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+                {textos.asistenteIa}
+              </h3>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                {panel.asistente_ia.capacidad}
+              </p>
+            </div>
           </div>
 
-          {panel.puestos_destacados.length === 0 ? (
-            <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-400">
-              {textos.sinKpis}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {panel.puestos_destacados.slice(0, 6).map((puesto) => (
-                <div
-                  key={puesto.nombre}
-                  className="rounded-[24px] border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/50"
-                >
-                  <h4 className="text-lg font-black tracking-tight text-slate-950 dark:text-white">
-                    {puesto.nombre}
-                  </h4>
-                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                    {textos.supervisor}: {puesto.supervisor}
-                  </p>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                    {textos.kpiPrincipal}: {puesto.kpi_principal}
-                  </p>
-                  <div className="mt-4">
-                    <div className="mb-2 flex items-center justify-between text-sm font-semibold text-slate-700 dark:text-slate-200">
-                      <span>{textos.progreso}</span>
-                      <span>{puesto.progreso}%</span>
-                    </div>
-                    <div className="h-2.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-600"
-                        style={{ width: `${puesto.progreso}%` }}
-                      />
-                    </div>
-                    <p className="mt-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                      {textos.frecuencia}: {puesto.frecuencia}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </article>
-      </section>
+          <div className="mt-4 rounded-[22px] border border-cyan-100 bg-cyan-50/80 px-4 py-3 text-sm leading-6 text-cyan-900 dark:border-cyan-950/50 dark:bg-cyan-950/20 dark:text-cyan-200">
+            {textos.asistenteIaDashboardAyuda}
+          </div>
 
-      <section className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
-        <article className="rounded-[30px] border border-slate-200/80 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-900">
-          <h3 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">
-            {textos.alertas}
-          </h3>
-          <ul className="mt-5 space-y-4 pl-5 text-sm leading-7 text-slate-700 dark:text-slate-300">
-            {panel.alertas.map((alerta) => (
-              <li key={alerta}>{alerta}</li>
-            ))}
-          </ul>
-        </article>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <div className="rounded-[24px] bg-slate-50 p-4 dark:bg-slate-950/50">
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                {textos.estado}
+              </p>
+              <p className="mt-2 text-xl font-black text-slate-950 dark:text-white">
+                {panel.asistente_ia.estado}
+              </p>
+            </div>
+            <div className="rounded-[24px] bg-slate-50 p-4 dark:bg-slate-950/50">
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                {textos.rolesDisponibles}
+              </p>
+              <p className="mt-2 text-xl font-black text-slate-950 dark:text-white">
+                {panel.asistente_ia.roles_disponibles}
+              </p>
+            </div>
+          </div>
 
-        <article className="rounded-[30px] border border-slate-200/80 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-900">
-          <h3 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">
-            {textos.asistenteIa}
-          </h3>
-          <p className="mt-4 text-sm leading-7 text-slate-700 dark:text-slate-300">
-            {panel.asistente_ia.capacidad}
-          </p>
-          <div className="mt-5 rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/50">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-              {panel.asistente_ia.estado}
+          <div className="mt-4 rounded-[24px] border border-slate-200/80 bg-white p-4 dark:border-slate-800 dark:bg-slate-950/50">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+              {textos.rolActivo}
             </p>
-            <p className="mt-1 font-black tracking-tight text-slate-950 dark:text-white">
+            <p className="mt-2 text-xl font-black text-slate-950 dark:text-white">
               {panel.asistente_ia.rol_activo}
             </p>
           </div>
@@ -327,8 +665,7 @@ function App() {
         datosPerfilTalento,
         datosCentroKpis,
         datosAsistenteIa,
-      ] =
-        await Promise.all([
+      ] = await Promise.all([
         obtenerPanelGeneral(),
         obtenerOrganigrama(),
         obtenerDirectorioEmpleados(),
@@ -492,7 +829,7 @@ function App() {
         ) : null}
 
         {panelLocalizado && !cargando && !error && vistaActiva === 'dashboard' ? (
-          <VistaDashboard panel={panelLocalizado} textos={textos} />
+          <VistaDashboard panel={panelLocalizado} textos={textos} alCambiarVista={setVistaActiva} />
         ) : null}
 
         {!cargando && !error && vistaActiva === 'organigrama' ? (

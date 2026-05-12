@@ -26,6 +26,7 @@ export const traducciones = {
     navIa: 'Asistente IA',
     etiquetaBeta: 'Beta',
     resumen: 'Resumen ejecutivo',
+    lecturaEjecutiva: 'Lectura ejecutiva',
     departamentos: 'Areas piloto',
     puestos: 'Puestos destacados',
     organigrama: 'Organigrama navegable',
@@ -37,6 +38,8 @@ export const traducciones = {
     asistenteIaConstruccion: 'Asistente IA en construccion',
     asistenteIaDescripcion:
       'Aqui conectaremos el RAG del rol para responder solo con el manual asociado.',
+    asistenteIaDashboardAyuda:
+      'Este bloque resume la capa futura de consulta por rol. Indica el estado del piloto, cuantos roles ya tienen contexto operativo disponible y cual es el rol de referencia mostrado en la demo.',
     cargando: 'Cargando datos del panel...',
     errorCarga: 'No se pudieron cargar los datos desde la API.',
     reintentar: 'Reintentar',
@@ -72,7 +75,18 @@ export const traducciones = {
     todosNiveles: 'Todos los niveles',
     limpiarFiltros: 'Limpiar filtros',
     empleadosActivos: 'Empleados activos',
+    puestosActivos: 'Puestos activos',
     rolesAdicionalesResumen: 'Roles adicionales',
+    coberturaKpi: 'Cobertura KPI',
+    dashboardCoberturaDescripcion:
+      'Promedio de cobertura KPI en las areas piloto priorizadas para la demo.',
+    dashboardSeguimientoDescripcion:
+      'Check-ins abiertos que requieren cierre operativo o validacion interna.',
+    dashboardNarrativaTitulo: 'Lectura operativa del momento',
+    dashboardNarrativaUno:
+      'Actualmente {puestosConKpi} de {puestosActivos} puestos activos ya cuentan con una definicion KPI dentro de la estructura sembrada.',
+    dashboardNarrativaDos:
+      'La operacion mantiene {rolesMultiples} colaboradores con roles multiples y {seguimientosPendientes} seguimientos pendientes, lo que refuerza la necesidad de trazabilidad centralizada.',
     promedioKpiResumen: 'Promedio KPI',
     supervisoresResumen: 'Supervisores directos',
     coberturaAreasResumen: 'Cobertura de areas',
@@ -183,6 +197,8 @@ export const traducciones = {
     themeDark: 'Oscuro',
     ariaModoClaro: 'Cambiar a modo claro',
     ariaModoOscuro: 'Cambiar a modo oscuro',
+    abrirMenu: 'Abrir menu',
+    cerrarMenu: 'Cerrar menu',
   },
   en: {
     idioma: 'EN',
@@ -211,6 +227,7 @@ export const traducciones = {
     navIa: 'AI Assistant',
     etiquetaBeta: 'Beta',
     resumen: 'Executive summary',
+    lecturaEjecutiva: 'Executive reading',
     departamentos: 'Pilot areas',
     puestos: 'Highlighted roles',
     organigrama: 'Navigable org chart',
@@ -222,6 +239,8 @@ export const traducciones = {
     asistenteIaConstruccion: 'AI assistant under construction',
     asistenteIaDescripcion:
       'The role-based RAG will be connected here to answer only from the linked manual.',
+    asistenteIaDashboardAyuda:
+      'This block summarizes the future role-based query layer. It shows the pilot status, how many roles already have operational context available, and which reference role is displayed in the demo.',
     cargando: 'Loading dashboard data...',
     errorCarga: 'The API data could not be loaded.',
     reintentar: 'Try again',
@@ -257,7 +276,18 @@ export const traducciones = {
     todosNiveles: 'All levels',
     limpiarFiltros: 'Clear filters',
     empleadosActivos: 'Active employees',
+    puestosActivos: 'Active roles',
     rolesAdicionalesResumen: 'Additional roles',
+    coberturaKpi: 'KPI coverage',
+    dashboardCoberturaDescripcion:
+      'Average KPI coverage across the pilot areas prioritized for the demo.',
+    dashboardSeguimientoDescripcion:
+      'Open check-ins that still require operational closure or internal validation.',
+    dashboardNarrativaTitulo: 'Current operational reading',
+    dashboardNarrativaUno:
+      'At the moment, {puestosConKpi} out of {puestosActivos} active roles already have a KPI definition inside the seeded structure.',
+    dashboardNarrativaDos:
+      'The operation currently maintains {rolesMultiples} collaborators with multiple roles and {seguimientosPendientes} pending check-ins, reinforcing the need for centralized traceability.',
     promedioKpiResumen: 'KPI average',
     supervisoresResumen: 'Direct supervisors',
     coberturaAreasResumen: 'Area coverage',
@@ -368,6 +398,8 @@ export const traducciones = {
     themeDark: 'Dark',
     ariaModoClaro: 'Switch to light mode',
     ariaModoOscuro: 'Switch to dark mode',
+    abrirMenu: 'Open menu',
+    cerrarMenu: 'Close menu',
   },
 }
 
@@ -404,6 +436,21 @@ const diccionarioDinamicoEn = {
     'Distribution of cheeses, dairy products and refrigerated goods',
   'Centralizar roles, responsabilidades, metricas y soporte operativo por area':
     'Centralize roles, responsibilities, metrics and operational support by area',
+  'Empleados activos': 'Active employees',
+  'Colaboradores con puesto principal vigente y estructura trazable':
+    'Collaborators with an active primary role and traceable structure',
+  'departamentos activos': 'active departments',
+  'Roles hibridos': 'Hybrid roles',
+  'Colaboradores con multiples responsabilidades operativas activas':
+    'Collaborators with multiple active operational responsibilities',
+  'puestos priorizados': 'prioritized roles',
+  'Cobertura KPI': 'KPI coverage',
+  'Puestos con definicion KPI activa dentro de la estructura operativa':
+    'Roles with an active KPI definition inside the operational structure',
+  'registros KPI sembrados': 'seeded KPI records',
+  'Seguimiento abierto': 'Open tracking',
+  'Check-ins KPI pendientes de cierre y validacion':
+    'KPI check-ins pending closure and validation',
   'Departamentos activos': 'Active departments',
   'Estructura base sembrada desde el organigrama operativo':
     'Baseline structure seeded from the operational org chart',
@@ -435,6 +482,8 @@ const diccionarioDinamicoEn = {
     "The hierarchy has already been aligned with the client's official org chart.",
   'El siguiente paso es enriquecer cada nodo con fichas funcionales y asistente IA por rol.':
     'The next step is to enrich each node with functional profiles and a role-based AI assistant.',
+  'El siguiente paso es consolidar seguimiento operativo y consulta guiada por rol.':
+    'The next step is to consolidate operational tracking and guided role-based consultation.',
   Piloto: 'Pilot',
   'Responder preguntas usando solo el manual asociado al rol o area':
     'Answer questions using only the manual linked to the role or area',
@@ -650,6 +699,26 @@ export function localizarPanelGeneral(panel, idioma) {
       return { ...item, tendencia: `${cantidad} active tracking records` }
     }
 
+    if (tendenciaNormalizada.includes('DEPARTAMENTOS ACTIVOS')) {
+      const cantidad = String(item.tendencia).match(/\d+/)?.[0] ?? '0'
+      return { ...item, tendencia: `${cantidad} active departments` }
+    }
+
+    if (tendenciaNormalizada.includes('PUESTOS PRIORIZADOS')) {
+      const cantidad = String(item.tendencia).match(/\d+/)?.[0] ?? '0'
+      return { ...item, tendencia: `${cantidad} prioritized roles` }
+    }
+
+    if (tendenciaNormalizada.includes('REGISTROS KPI SEMBRADOS')) {
+      const cantidad = String(item.tendencia).match(/\d+/)?.[0] ?? '0'
+      return { ...item, tendencia: `${cantidad} seeded KPI records` }
+    }
+
+    const coincidenciaCumplimiento = String(item.tendencia).match(/^(\d+)%\s+de cumplimiento promedio/i)
+    if (coincidenciaCumplimiento) {
+      return { ...item, tendencia: `${coincidenciaCumplimiento[1]}% average compliance` }
+    }
+
     return item
   })
 
@@ -661,6 +730,16 @@ export function localizarPanelGeneral(panel, idioma) {
     const coincidenciaRoles = String(alerta).match(/^(\d+)\s+empleados reportan multiples roles/i)
     if (coincidenciaRoles) {
       return `${coincidenciaRoles[1]} employees report multiple roles without formal time allocation.`
+    }
+
+    const coincidenciaSeguimientos = String(alerta).match(/^(\d+)\s+seguimientos KPI siguen pendientes/i)
+    if (coincidenciaSeguimientos) {
+      return `${coincidenciaSeguimientos[1]} KPI check-ins are still pending operational closure.`
+    }
+
+    const coincidenciaPuestos = String(alerta).match(/^(\d+)\s+puestos todavia no tienen una definicion KPI activa/i)
+    if (coincidenciaPuestos) {
+      return `${coincidenciaPuestos[1]} roles still do not have an active KPI definition.`
     }
 
     return traducirExacto(alerta, idioma)
