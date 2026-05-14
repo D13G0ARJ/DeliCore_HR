@@ -1,13 +1,17 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Bot,
   Building2,
+  ChevronsLeft,
+  ChevronsRight,
   ChevronRight,
+  ClipboardCheck,
   Gauge,
   LayoutDashboard,
   LogOut,
   Menu,
   Network,
+  UserPlus,
   X,
   UserSquare2,
   Users,
@@ -19,8 +23,10 @@ const itemsNavegacion = [
   { id: 'dashboard', icono: LayoutDashboard, traduccion: 'navDashboard' },
   { id: 'organigrama', icono: Network, traduccion: 'navOrganigrama' },
   { id: 'directorio', icono: Users, traduccion: 'navDirectorio' },
+  { id: 'gestion-usuarios', icono: UserPlus, traduccion: 'navGestionUsuarios' },
   { id: 'perfil', icono: UserSquare2, traduccion: 'navPerfil' },
   { id: 'kpis', icono: Gauge, traduccion: 'navKpis' },
+  { id: 'seguimiento-kpis', icono: ClipboardCheck, traduccion: 'navSeguimientoKpis' },
   { id: 'ia', icono: Bot, traduccion: 'navIa', beta: true },
 ]
 
@@ -33,9 +39,22 @@ export function Layout({
   alCambiarTema,
   alCerrarSesion,
   textos,
+  sesion,
   children,
 }) {
   const [menuMovilAbierto, setMenuMovilAbierto] = useState(false)
+  const [sidebarEscritorioAbierto, setSidebarEscritorioAbierto] = useState(() => {
+    const guardado = localStorage.getItem('delicore-sidebar-open')
+    return guardado === null ? true : guardado === 'true'
+  })
+  const itemsVisibles = useMemo(() => {
+    const permitidas = new Set(sesion?.vistas ?? [])
+    return itemsNavegacion.filter((item) => permitidas.has(item.id))
+  }, [sesion])
+
+  useEffect(() => {
+    localStorage.setItem('delicore-sidebar-open', String(sidebarEscritorioAbierto))
+  }, [sidebarEscritorioAbierto])
 
   function manejarCambioVista(id) {
     alCambiarVista(id)
@@ -45,6 +64,10 @@ export function Layout({
   function manejarCerrarSesion() {
     setMenuMovilAbierto(false)
     alCerrarSesion()
+  }
+
+  function alternarSidebar() {
+    setSidebarEscritorioAbierto((actual) => !actual)
   }
 
   return (
@@ -62,7 +85,8 @@ export function Layout({
         className={[
           'fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-slate-200/70 bg-white/85 px-5 py-6 shadow-soft backdrop-blur-md transition-transform duration-300 dark:border-slate-800 dark:bg-slate-900/85',
           menuMovilAbierto ? 'translate-x-0' : '-translate-x-full',
-          'lg:z-40 lg:translate-x-0',
+          sidebarEscritorioAbierto ? 'lg:translate-x-0' : 'lg:-translate-x-full',
+          'lg:z-40',
         ].join(' ')}
       >
         <div className="flex items-center gap-3">
@@ -81,15 +105,20 @@ export function Layout({
           >
             <X size={18} />
           </button>
+          <button
+            type="button"
+            aria-label={sidebarEscritorioAbierto ? 'Contraer sidebar' : 'Expandir sidebar'}
+            className="ml-auto hidden h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:border-slate-300 hover:text-slate-950 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 lg:flex"
+            onClick={alternarSidebar}
+          >
+            {sidebarEscritorioAbierto ? <ChevronsLeft size={18} /> : <ChevronsRight size={18} />}
+          </button>
         </div>
 
         <nav className="mt-10 space-y-2">
-          {itemsNavegacion.map((item) => {
+          {itemsVisibles.map((item) => {
             const Icono = item.icono
-            const activo =
-              vistaActiva === item.id ||
-              (item.id === 'kpis' &&
-                (vistaActiva === 'seguimiento-kpis' || vistaActiva === 'kpis-sugeridos'))
+            const activo = vistaActiva === item.id || (item.id === 'kpis' && (vistaActiva === 'kpis-sugeridos' || vistaActiva === 'registro-actividades'))
 
             return (
               <button
@@ -139,15 +168,22 @@ export function Layout({
         </div>
       </aside>
 
-      <div className="min-h-screen lg:ml-72">
+      <div className={`min-h-screen transition-[margin] duration-300 ${sidebarEscritorioAbierto ? 'lg:ml-72' : 'lg:ml-0'}`}>
         <header className="sticky top-0 z-30 border-b border-slate-200/70 bg-white/80 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/80">
           <div className="flex items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3">
               <button
                 type="button"
                 aria-label={textos.abrirMenu}
-                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200/80 bg-white/80 text-slate-700 shadow-sm backdrop-blur-md transition hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100 lg:hidden"
-                onClick={() => setMenuMovilAbierto(true)}
+                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200/80 bg-white/80 text-slate-700 shadow-sm backdrop-blur-md transition hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100"
+                onClick={() => {
+                  if (window.innerWidth >= 1024) {
+                    alternarSidebar()
+                    return
+                  }
+
+                  setMenuMovilAbierto(true)
+                }}
               >
                 <Menu size={20} />
               </button>
@@ -179,13 +215,18 @@ export function Layout({
                     color: '#fff',
                   }}
                 >
-                  SA
+                  {sesion?.nombre
+                    ?.split(' ')
+                    .slice(0, 2)
+                    .map((item) => item[0])
+                    .join('')
+                    .toUpperCase() ?? 'SA'}
                 </Avatar>
                 <div className="hidden text-left sm:block">
                   <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                     {textos.rolActivo}
                   </p>
-                  <p className="font-bold">{textos.superAdmin}</p>
+                  <p className="font-bold">{sesion?.rol_nombre ?? textos.superAdmin}</p>
                 </div>
               </div>
             </div>

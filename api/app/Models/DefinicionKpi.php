@@ -12,6 +12,7 @@ class DefinicionKpi extends Model
 
     protected $fillable = [
         'puesto_id',
+        'empleado_id',
         'nombre',
         'descripcion',
         'formula',
@@ -28,6 +29,11 @@ class DefinicionKpi extends Model
     public function puesto(): BelongsTo
     {
         return $this->belongsTo(Puesto::class, 'puesto_id');
+    }
+
+    public function empleado(): BelongsTo
+    {
+        return $this->belongsTo(Empleado::class, 'empleado_id');
     }
 
     public function registros(): HasMany

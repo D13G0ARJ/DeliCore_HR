@@ -21,6 +21,7 @@ class SeguimientoKpi extends Model
         'valor_actual',
         'meta_valor',
         'unidad',
+        'justificacion_respuesta',
     ];
 
     protected $casts = [

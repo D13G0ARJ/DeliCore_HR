@@ -53,4 +53,9 @@ class Empleado extends Model
     {
         return $this->hasMany(SeguimientoKpi::class, 'empleado_id');
     }
+
+    public function definicionesKpi(): HasMany
+    {
+        return $this->hasMany(DefinicionKpi::class, 'empleado_id');
+    }
 }

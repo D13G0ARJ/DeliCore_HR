@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Avatar, ConfigProvider, theme as antdTheme } from 'antd'
+import { ConfigProvider, theme as antdTheme } from 'antd'
 import {
   AlertTriangle,
   ArrowRight,
   Bot,
   BriefcaseBusiness,
-  Building2,
   ChartColumn,
   CircleAlert,
   CircleCheckBig,
@@ -17,16 +16,25 @@ import './App.css'
 import { AsistenteIaRol } from './componentes/AsistenteIaRol'
 import { CentroKpis } from './componentes/CentroKpis'
 import { DirectorioEmpleados } from './componentes/DirectorioEmpleados'
+import { EspacioEmpleado } from './componentes/EspacioEmpleado'
+import { GestionUsuarios } from './componentes/GestionUsuarios'
 import { Layout } from './componentes/Layout'
 import { KpisSugeridos } from './componentes/KpisSugeridos'
 import { Organigrama } from './componentes/Organigrama'
 import { PanelPerfil } from './componentes/PanelPerfil'
+import { PerfilEmpleado } from './componentes/PerfilEmpleado'
 import { PerfilTalento } from './componentes/PerfilTalento'
 import { SeguimientoKpis } from './componentes/SeguimientoKpis'
+import { CrearKpiWizard } from './componentes/CrearKpiWizard'
 import {
+  actualizarEmpleadoAdmin,
+  crearEmpleadoAdmin,
+  crearKpi,
+  obtenerAccesoDemo,
   obtenerAsistenteIaRol,
   obtenerCentroKpis,
   obtenerDirectorioEmpleados,
+  obtenerGestionUsuarios,
   obtenerOrganigrama,
   obtenerPanelGeneral,
   obtenerPerfilTalento,
@@ -369,10 +377,22 @@ function VistaDashboard({ panel, textos, alCambiarVista }) {
                 onClick={() => alCambiarVista('organigrama')}
               />
               <TarjetaAccion
+                icono={Users}
+                titulo={textos.navGestionUsuarios}
+                descripcion={textos.gestionUsuariosSubtitulo}
+                onClick={() => alCambiarVista('gestion-usuarios')}
+              />
+              <TarjetaAccion
                 icono={ChartColumn}
                 titulo={textos.navKpis}
                 descripcion={textos.centroKpisSubtitulo}
                 onClick={() => alCambiarVista('kpis')}
+              />
+              <TarjetaAccion
+                icono={ClipboardList}
+                titulo={textos.navSeguimientoKpis}
+                descripcion={textos.seguimientoKpisSubtitulo}
+                onClick={() => alCambiarVista('seguimiento-kpis')}
               />
               <TarjetaAccion
                 icono={Bot}
@@ -569,41 +589,27 @@ function VistaOrganigrama({ organigrama, textos, idioma, alSeleccionar }) {
   )
 }
 
-function VistaPlaceholder({ titulo, descripcion, icono }) {
-  return (
-    <div className="rounded-[34px] border border-dashed border-slate-300 bg-white p-10 text-center shadow-soft dark:border-slate-700 dark:bg-slate-900">
-      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-lg">
-        <Avatar
-          size={42}
-          style={{ background: 'transparent', color: '#fff', fontWeight: 900 }}
-        >
-          {icono}
-        </Avatar>
-      </div>
-      <h2 className="mt-6 text-3xl font-black tracking-tight text-slate-950 dark:text-white">
-        {titulo}
-      </h2>
-      <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-300">
-        {descripcion}
-      </p>
-    </div>
-  )
-}
-
 function App() {
   const [idioma, setIdioma] = useState('es')
   const [tema, setTema] = useState(() => localStorage.getItem('tema-delicore') ?? 'light')
   const [autenticado, setAutenticado] = useState(false)
+  const [accesoDemo, setAccesoDemo] = useState(null)
+  const [tipoAcceso, setTipoAcceso] = useState('admin')
+  const [perfilSeleccionado, setPerfilSeleccionado] = useState('')
+  const [sesionActiva, setSesionActiva] = useState(null)
   const [vistaActiva, setVistaActiva] = useState('dashboard')
   const [panel, setPanel] = useState(null)
   const [organigrama, setOrganigrama] = useState([])
   const [directorio, setDirectorio] = useState(null)
   const [perfilTalento, setPerfilTalento] = useState(null)
   const [centroKpis, setCentroKpis] = useState(null)
+  const [gestionUsuarios, setGestionUsuarios] = useState(null)
   const [asistenteIaRol, setAsistenteIaRol] = useState(null)
   const [empleadoSeleccionadoId, setEmpleadoSeleccionadoId] = useState(null)
   const [nodoActivo, setNodoActivo] = useState(null)
   const [cargando, setCargando] = useState(false)
+  const [guardandoKpi, setGuardandoKpi] = useState(false)
+  const [guardandoUsuario, setGuardandoUsuario] = useState(false)
   const [error, setError] = useState('')
 
   const textos = traducciones[idioma]
@@ -632,12 +638,21 @@ function App() {
   }, [tema, esOscuro])
 
   useEffect(() => {
+    obtenerAccesoDemo()
+      .then((datos) => {
+        setAccesoDemo(datos)
+        setPerfilSeleccionado(String(datos?.perfiles?.admin?.[0]?.empleado_id ?? ''))
+      })
+      .catch((nuevoError) => setError(nuevoError.message))
+  }, [])
+
+  useEffect(() => {
     if (!autenticado) {
       return
     }
 
     cargarDatos()
-  }, [autenticado])
+  }, [autenticado, sesionActiva])
 
   useEffect(() => {
     if (!autenticado) {
@@ -651,30 +666,41 @@ function App() {
     setCargando(true)
     setError('')
 
+    const empleadoId = sesionActiva?.tipo === 'empleado' ? sesionActiva.empleado_id : undefined
+
     try {
-      const [
-        datosPanel,
-        datosOrganigrama,
-        datosDirectorio,
-        datosPerfilTalento,
-        datosCentroKpis,
-        datosAsistenteIa,
-      ] = await Promise.all([
-        obtenerPanelGeneral(),
-        obtenerOrganigrama(),
-        obtenerDirectorioEmpleados(),
-        obtenerPerfilTalento(),
-        obtenerCentroKpis(),
-        obtenerAsistenteIaRol(idioma),
+      const [datosPerfilTalento, datosCentroKpis] = await Promise.all([
+        obtenerPerfilTalento({ empleadoId }),
+        obtenerCentroKpis({ empleadoId }),
       ])
 
-      setPanel(datosPanel)
-      setOrganigrama(datosOrganigrama.organigrama ?? [])
-      setDirectorio(datosDirectorio)
       setPerfilTalento(datosPerfilTalento)
       setCentroKpis(datosCentroKpis)
-      setAsistenteIaRol(datosAsistenteIa)
-      setEmpleadoSeleccionadoId(datosDirectorio?.empleados?.[0]?.id ?? null)
+
+      if (sesionActiva?.tipo === 'admin') {
+        const [datosPanel, datosOrganigrama, datosDirectorio, datosGestionUsuarios, datosAsistenteIa] = await Promise.all([
+          obtenerPanelGeneral(),
+          obtenerOrganigrama(),
+          obtenerDirectorioEmpleados(),
+          obtenerGestionUsuarios(),
+          obtenerAsistenteIaRol(idioma),
+        ])
+
+        setPanel(datosPanel)
+        setOrganigrama(datosOrganigrama.organigrama ?? [])
+        setDirectorio(datosDirectorio)
+        setGestionUsuarios(datosGestionUsuarios)
+        setAsistenteIaRol(datosAsistenteIa)
+        setEmpleadoSeleccionadoId(datosDirectorio?.empleados?.[0]?.id ?? null)
+      } else {
+        const datosAsistenteIa = await obtenerAsistenteIaRol(idioma)
+        setAsistenteIaRol(datosAsistenteIa)
+        setPanel(null)
+        setOrganigrama([])
+        setDirectorio(null)
+        setGestionUsuarios(null)
+        setEmpleadoSeleccionadoId(empleadoId ?? null)
+      }
     } catch (nuevoError) {
       setError(nuevoError.message)
     } finally {
@@ -693,6 +719,16 @@ function App() {
 
   function manejarIngreso(evento) {
     evento.preventDefault()
+    const perfiles = accesoDemo?.perfiles?.[tipoAcceso] ?? []
+    const perfil = perfiles.find((item) => String(item.empleado_id) === String(perfilSeleccionado))
+
+    if (!perfil) {
+      setError('Selecciona un perfil valido para ingresar.')
+      return
+    }
+
+    setSesionActiva(perfil)
+    setVistaActiva('dashboard')
     setAutenticado(true)
   }
 
@@ -702,16 +738,68 @@ function App() {
 
   function cerrarSesion() {
     setAutenticado(false)
+    setSesionActiva(null)
     setVistaActiva('dashboard')
     setPanel(null)
     setOrganigrama([])
     setDirectorio(null)
     setPerfilTalento(null)
     setCentroKpis(null)
+    setGestionUsuarios(null)
     setAsistenteIaRol(null)
     setEmpleadoSeleccionadoId(null)
     setNodoActivo(null)
     setError('')
+  }
+
+  async function manejarCrearKpi(datos) {
+    setGuardandoKpi(true)
+    setError('')
+
+    try {
+      await crearKpi(datos)
+      await cargarDatos()
+      return true
+    } catch (nuevoError) {
+      setError(nuevoError.message)
+      return false
+    } finally {
+      setGuardandoKpi(false)
+    }
+  }
+
+  async function manejarCrearUsuario(datos) {
+    setGuardandoUsuario(true)
+    setError('')
+
+    try {
+      const respuesta = await crearEmpleadoAdmin(datos)
+      await Promise.all([cargarDatos(), obtenerAccesoDemo().then(setAccesoDemo)])
+      setEmpleadoSeleccionadoId(respuesta?.empleado?.id ?? null)
+      return respuesta
+    } catch (nuevoError) {
+      setError(nuevoError.message)
+      return null
+    } finally {
+      setGuardandoUsuario(false)
+    }
+  }
+
+  async function manejarActualizarUsuario(id, datos) {
+    setGuardandoUsuario(true)
+    setError('')
+
+    try {
+      const respuesta = await actualizarEmpleadoAdmin(id, datos)
+      await Promise.all([cargarDatos(), obtenerAccesoDemo().then(setAccesoDemo)])
+      setEmpleadoSeleccionadoId(respuesta?.empleado?.id ?? null)
+      return respuesta
+    } catch (nuevoError) {
+      setError(nuevoError.message)
+      return null
+    } finally {
+      setGuardandoUsuario(false)
+    }
   }
 
   function cambiarTema(evento) {
@@ -765,6 +853,39 @@ function App() {
                 <p>{textos.descripcionLogin}</p>
               </div>
 
+              <div className="mt-8 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTipoAcceso('admin')
+                    setPerfilSeleccionado(String(accesoDemo?.perfiles?.admin?.[0]?.empleado_id ?? ''))
+                  }}
+                  className={[
+                    'rounded-full px-4 py-2 text-sm font-bold transition',
+                    tipoAcceso === 'admin'
+                      ? 'bg-slate-900 text-white'
+                      : 'bg-white/70 text-slate-700',
+                  ].join(' ')}
+                >
+                  Administrador
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTipoAcceso('empleado')
+                    setPerfilSeleccionado(String(accesoDemo?.perfiles?.empleado?.[0]?.empleado_id ?? ''))
+                  }}
+                  className={[
+                    'rounded-full px-4 py-2 text-sm font-bold transition',
+                    tipoAcceso === 'empleado'
+                      ? 'bg-slate-900 text-white'
+                      : 'bg-white/70 text-slate-700',
+                  ].join(' ')}
+                >
+                  Empleado
+                </button>
+              </div>
+
               <div className="login-hero__marca">
                 <strong>{textos.marca}</strong>
                 <span>{textos.subtituloMarca}</span>
@@ -779,12 +900,21 @@ function App() {
 
               <label className="campo-login">
                 <span>{textos.correo}</span>
-                <input defaultValue="superadmin@lasdelicias.demo" type="email" />
+                <select
+                  value={perfilSeleccionado}
+                  onChange={(evento) => setPerfilSeleccionado(evento.target.value)}
+                >
+                  {((accesoDemo?.perfiles?.[tipoAcceso]) ?? []).map((perfil) => (
+                    <option key={perfil.empleado_id} value={perfil.empleado_id}>
+                      {perfil.nombre} · {perfil.puesto}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <label className="campo-login">
                 <span>{textos.contrasena}</span>
-                <input defaultValue="********" type="password" />
+                <input defaultValue="demo123" type="password" />
               </label>
 
               <button className="boton-login" type="submit">
@@ -808,6 +938,7 @@ function App() {
         alCambiarTema={cambiarTema}
         alCerrarSesion={cerrarSesion}
         textos={textos}
+        sesion={sesionActiva}
       >
         {cargando ? (
           <div className="estado-carga">{textos.cargando}</div>
@@ -822,11 +953,33 @@ function App() {
           </div>
         ) : null}
 
-        {panelLocalizado && !cargando && !error && vistaActiva === 'dashboard' ? (
+        {sesionActiva?.tipo === 'admin' && panelLocalizado && !cargando && !error && vistaActiva === 'dashboard' ? (
           <VistaDashboard panel={panelLocalizado} textos={textos} alCambiarVista={setVistaActiva} />
         ) : null}
 
-        {!cargando && !error && vistaActiva === 'organigrama' ? (
+        {sesionActiva?.tipo === 'empleado' && !cargando && !error && vistaActiva === 'dashboard' ? (
+          <EspacioEmpleado
+            perfil={perfilTalentoLocalizado}
+            centro={centroKpisLocalizado}
+            sesion={sesionActiva}
+            textos={textos}
+            onAbrirKpis={() => setVistaActiva('kpis')}
+            onAbrirSeguimiento={() => setVistaActiva('seguimiento-kpis')}
+            onAbrirAsistente={() => setVistaActiva('ia')}
+          />
+        ) : null}
+
+        {sesionActiva?.tipo === 'empleado' && !cargando && !error && vistaActiva === 'perfil' ? (
+          <PerfilEmpleado
+            perfil={perfilTalentoLocalizado}
+            centro={centroKpisLocalizado}
+            sesion={sesionActiva}
+            textos={textos}
+            idioma={idioma}
+          />
+        ) : null}
+
+        {sesionActiva?.tipo === 'admin' && !cargando && !error && vistaActiva === 'organigrama' ? (
           <VistaOrganigrama
             organigrama={organigrama}
             textos={textos}
@@ -835,7 +988,7 @@ function App() {
           />
         ) : null}
 
-        {!cargando && !error && vistaActiva === 'directorio' && directorioLocalizado ? (
+        {sesionActiva?.tipo === 'admin' && !cargando && !error && vistaActiva === 'directorio' && directorioLocalizado ? (
           <DirectorioEmpleados
             directorio={directorioLocalizado}
             textos={textos}
@@ -846,7 +999,16 @@ function App() {
           />
         ) : null}
 
-        {!cargando && !error && vistaActiva === 'perfil' && perfilTalentoLocalizado ? (
+        {sesionActiva?.tipo === 'admin' && !cargando && !error && vistaActiva === 'gestion-usuarios' && gestionUsuarios ? (
+          <GestionUsuarios
+            gestion={gestionUsuarios}
+            onCrearUsuario={manejarCrearUsuario}
+            onActualizarUsuario={manejarActualizarUsuario}
+            guardando={guardandoUsuario}
+          />
+        ) : null}
+
+        {sesionActiva?.tipo === 'admin' && !cargando && !error && vistaActiva === 'perfil' && perfilTalentoLocalizado ? (
           <PerfilTalento
             perfil={perfilTalentoLocalizado}
             textos={textos}
@@ -860,9 +1022,27 @@ function App() {
           <CentroKpis
             centro={centroKpisLocalizado}
             textos={textos}
-            idioma={idioma}
             onAbrirSeguimiento={() => setVistaActiva('seguimiento-kpis')}
             onAbrirSugeridos={() => setVistaActiva('kpis-sugeridos')}
+            onAbrirWizard={() => setVistaActiva('registro-actividades')}
+            puedeGestionar={sesionActiva?.tipo === 'admin'}
+            modo={sesionActiva?.tipo}
+          />
+        ) : null}
+
+        {vistaActiva === 'registro-actividades' ? (
+          <CrearKpiWizard
+            centro={centroKpisLocalizado}
+            directorio={directorioLocalizado}
+            textos={textos}
+            onVolver={() => setVistaActiva('kpis')}
+            onGuardar={async (datos) => {
+              const creado = await manejarCrearKpi(datos)
+              if (creado) {
+                setVistaActiva('seguimiento-kpis')
+              }
+            }}
+            guardando={guardandoKpi}
           />
         ) : null}
 
@@ -871,11 +1051,12 @@ function App() {
             centro={centroKpisLocalizado}
             textos={textos}
             idioma={idioma}
-            onVolver={() => setVistaActiva('kpis')}
+            onVolver={sesionActiva?.tipo === 'admin' ? () => setVistaActiva('kpis') : null}
+            modo={sesionActiva?.tipo}
           />
         ) : null}
 
-        {!cargando && !error && vistaActiva === 'kpis-sugeridos' && centroKpisLocalizado ? (
+        {sesionActiva?.tipo === 'admin' && !cargando && !error && vistaActiva === 'kpis-sugeridos' && centroKpisLocalizado ? (
           <KpisSugeridos
             centro={centroKpisLocalizado}
             textos={textos}
@@ -888,6 +1069,7 @@ function App() {
             asistente={asistenteIaRolLocalizado}
             textos={textos}
             idioma={idioma}
+            sesion={sesionActiva}
           />
         ) : null}
       </Layout>

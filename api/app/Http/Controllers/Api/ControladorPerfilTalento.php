@@ -99,6 +99,13 @@ class ControladorPerfilTalento extends Controller
                 ->values(),
             'responsabilidades' => $this->extraerResponsabilidades($manual),
             'manual_resumen' => $manual,
+            'departamentos_relacionados' => collect([
+                $puesto?->departamento?->nombre,
+                ...$empleado->roles
+                    ->where('tipo_rol', 'adicional')
+                    ->map(fn ($rol) => $rol->puesto?->departamento?->nombre)
+                    ->all(),
+            ])->filter()->unique()->values(),
             'promedio_cumplimiento' => (int) round($empleado->registrosKpi->avg('valor_real') ?? 0),
             'kpis' => $empleado->registrosKpi
                 ->sortByDesc('periodo_fin')

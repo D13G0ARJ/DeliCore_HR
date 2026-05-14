@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, CalendarCheck2, CheckSquare, ShieldCheck } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { ArrowLeft, CalendarCheck2, CheckSquare, MessageSquareMore, ShieldCheck } from 'lucide-react'
 import { actualizarSeguimientoKpi } from '../servicios/api'
 
 function TarjetaResumen({ titulo, valor, descripcion, icono: Icono }) {
@@ -23,14 +23,39 @@ function TarjetaResumen({ titulo, valor, descripcion, icono: Icono }) {
   )
 }
 
-function BarraCumplimiento({ valor }) {
+function TarjetaPendienteDia({ centro, textos, modo, onVolver }) {
+  const resumen = modo === 'empleado' ? centro.mi_panel?.resumen : centro.resumen
+  const pendientes = resumen?.seguimientos_pendientes ?? 0
+
   return (
-    <div className="h-2.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
-      <div
-        className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500"
-        style={{ width: `${Math.min(valor, 100)}%` }}
-      />
-    </div>
+    <section className="rounded-[30px] border border-cyan-200 bg-gradient-to-r from-cyan-50 via-white to-blue-50 p-6 shadow-soft dark:border-cyan-900/50 dark:from-cyan-950/20 dark:via-slate-900 dark:to-blue-950/10">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-300">
+            {modo === 'empleado' ? 'Registro diario' : 'Control operativo'}
+          </p>
+          <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+            {pendientes} {pendientes === 1 ? 'pendiente clave' : 'pendientes clave'}
+          </h3>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+            {modo === 'empleado'
+              ? 'Marca lo completado y registra el valor actual de cada KPI sin salirte del flujo.'
+              : 'Revisa lo pendiente por frecuencia y valida rápido qué necesita cierre esta semana.'}
+          </p>
+        </div>
+
+        {onVolver ? (
+          <button
+            type="button"
+            onClick={onVolver}
+            className="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+          >
+            <ArrowLeft size={16} />
+            {textos.volverCentroKpis}
+          </button>
+        ) : null}
+      </div>
+    </section>
   )
 }
 
@@ -59,32 +84,29 @@ function contarPendientes(items = []) {
   return items.filter((item) => !item.completado).length
 }
 
-export function SeguimientoKpis({ centro, textos, idioma, onVolver }) {
-  const [tracker, setTracker] = useState(centro.tracker_por_rol ?? [])
+export function SeguimientoKpis({ centro, textos, idioma, onVolver, modo = 'admin' }) {
   const [actualizandoId, setActualizandoId] = useState(null)
+  const [formularios, setFormularios] = useState({})
+  const [estadoGuardado, setEstadoGuardado] = useState({})
 
-  useEffect(() => {
-    setTracker(centro.tracker_por_rol ?? [])
-  }, [centro])
-
-  const catalogoPorId = useMemo(() => {
-    return new Set((centro.catalogo ?? []).map((item) => item.id))
-  }, [centro.catalogo])
-
-  const itemsPlano = useMemo(() => tracker.flatMap((grupo) => grupo.items ?? []), [tracker])
-
-  const secciones = useMemo(() => {
-    const base = {
-      diario: [],
-      semanal: [],
-      otros: [],
+  const itemsPlano = useMemo(() => {
+    const sobrescribir = (item) => {
+      const cambios = formularios[item.id]
+      return cambios ? { ...item, ...cambios } : item
     }
 
-    itemsPlano.forEach((item) => {
-      const key = normalizarFrecuencia(item.frecuencia)
-      base[key].push(item)
-    })
+    if (modo === 'empleado') {
+      return (centro.mi_panel?.seguimientos ?? []).map(sobrescribir)
+    }
 
+    return (centro.tracker_por_rol ?? []).flatMap((grupo) => (grupo.items ?? []).map(sobrescribir))
+  }, [centro.mi_panel?.seguimientos, centro.tracker_por_rol, formularios, modo])
+
+  const secciones = useMemo(() => {
+    const base = { diario: [], semanal: [], otros: [] }
+    itemsPlano.forEach((item) => {
+      base[normalizarFrecuencia(item.frecuencia)].push(item)
+    })
     return base
   }, [itemsPlano])
 
@@ -93,49 +115,85 @@ export function SeguimientoKpis({ centro, textos, idioma, onVolver }) {
   const pendientesOtros = useMemo(() => contarPendientes(secciones.otros), [secciones.otros])
 
   const resumenes = [
-    {
-      titulo: textos.seguimientoDiario,
-      valor: pendientesDiario,
-      descripcion: textos.seguimientoDiarioDescripcion,
-      icono: CalendarCheck2,
-    },
-    {
-      titulo: textos.seguimientoSemanal,
-      valor: pendientesSemanal,
-      descripcion: textos.seguimientoSemanalDescripcion,
-      icono: CheckSquare,
-    },
-    {
-      titulo: textos.modoControlado,
-      valor: textos.demoOperativa,
-      descripcion: textos.seguimientoKpisRegla,
-      icono: ShieldCheck,
-    },
+    { titulo: textos.seguimientoDiario, valor: pendientesDiario, descripcion: textos.seguimientoDiarioDescripcion, icono: CalendarCheck2 },
+    { titulo: textos.seguimientoSemanal, valor: pendientesSemanal, descripcion: textos.seguimientoSemanalDescripcion, icono: CheckSquare },
+    { titulo: 'Justificaciones', valor: itemsPlano.filter((item) => item.justificacion_respuesta).length, descripcion: 'Seguimientos con contexto registrado.', icono: MessageSquareMore },
+    { titulo: textos.modoControlado, valor: textos.demoOperativa, descripcion: textos.seguimientoKpisRegla, icono: ShieldCheck },
   ]
 
-  async function alternarSeguimiento(itemId, completado) {
-    setActualizandoId(itemId)
+  function actualizarFormulario(id, campo, valor) {
+    setFormularios((actual) => ({
+      ...actual,
+      [id]: {
+        valor_actual: actual[id]?.valor_actual ?? '',
+        justificacion_respuesta: actual[id]?.justificacion_respuesta ?? '',
+        completado: actual[id]?.completado ?? false,
+        [campo]: valor,
+      },
+    }))
+
+    setEstadoGuardado((actual) => ({
+      ...actual,
+      [id]: 'editando',
+    }))
+  }
+
+  async function guardarSeguimiento(item, cambios = {}) {
+    const base = formularios[item.id] ?? {
+      valor_actual: item.valor_actual ?? '',
+      justificacion_respuesta: item.justificacion_respuesta ?? '',
+      completado: item.completado,
+    }
+
+    const payload = {
+      completado: cambios.completado ?? base.completado,
+      valor_actual:
+        cambios.valor_actual ??
+        (base.valor_actual === '' || base.valor_actual === null ? null : Number(base.valor_actual)),
+      justificacion_respuesta: cambios.justificacion_respuesta ?? base.justificacion_respuesta ?? '',
+    }
+
+    setActualizandoId(item.id)
+    setEstadoGuardado((actual) => ({
+      ...actual,
+      [item.id]: 'guardando',
+    }))
 
     try {
-      await actualizarSeguimientoKpi(itemId, completado)
-      setTracker((actual) =>
-        actual.map((grupo) => {
-          const items = (grupo.items ?? []).map((item) =>
-            item.id === itemId ? { ...item, completado } : item,
-          )
-
-          return {
-            ...grupo,
-            items,
-            progreso: Math.round(
-              (items.filter((item) => item.completado).length / Math.max(items.length, 1)) * 100,
-            ),
-          }
-        }),
-      )
+      await actualizarSeguimientoKpi(item.id, payload)
+      setEstadoGuardado((actual) => ({
+        ...actual,
+        [item.id]: 'guardado',
+      }))
     } finally {
       setActualizandoId(null)
     }
+  }
+
+  function necesitaJustificacion(item, datosForm) {
+    const valorActual = Number(
+      datosForm.valor_actual === '' || datosForm.valor_actual === null ? item.valor_actual ?? 0 : datosForm.valor_actual,
+    )
+    const meta = Number(item.meta_valor ?? 0)
+
+    if (!datosForm.completado) {
+      return true
+    }
+
+    if (meta > 0 && !Number.isNaN(valorActual) && valorActual < meta) {
+      return true
+    }
+
+    return false
+  }
+
+  function textoEstadoGuardado(id) {
+    const estado = estadoGuardado[id]
+
+    if (estado === 'guardando') return textos.guardandoJustificacion
+    if (estado === 'guardado') return textos.guardadoJustificacion
+    if (estado === 'editando') return textos.editandoJustificacion
+    return textos.sincronizadoJustificacion
   }
 
   function renderItems(items, etiquetaVacia) {
@@ -148,72 +206,158 @@ export function SeguimientoKpis({ centro, textos, idioma, onVolver }) {
     }
 
     return (
-      <div className="space-y-3">
+      <div className="space-y-4">
         {items.map((item) => {
-          const kpiExiste = item.definicion_kpi_id ? catalogoPorId.has(item.definicion_kpi_id) : false
+          const datosForm = formularios[item.id] ?? {
+            valor_actual: item.valor_actual ?? '',
+            justificacion_respuesta: item.justificacion_respuesta ?? '',
+            completado: item.completado,
+          }
+          const justificacionRecomendada = necesitaJustificacion(item, datosForm)
+          const longitudJustificacion = datosForm.justificacion_respuesta?.length ?? 0
 
           return (
-            <label
+            <div
               key={item.id}
-              className="flex items-start gap-3 rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-4 transition hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950/50"
+              className={`group overflow-hidden rounded-[24px] border transition-all ${
+                datosForm.completado
+                  ? 'border-emerald-200 bg-emerald-50/40 dark:border-emerald-800/30 dark:bg-emerald-950/20'
+                  : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-soft dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700'
+              }`}
             >
-              <input
-                type="checkbox"
-                checked={item.completado}
-                disabled={actualizandoId === item.id}
-                onChange={(evento) => alternarSeguimiento(item.id, evento.target.checked)}
-                className="mt-1 h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
-              />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex flex-1 items-start gap-4">
+                  <label className="relative flex cursor-pointer items-center justify-center pt-1">
+                    <input
+                      type="checkbox"
+                      checked={datosForm.completado}
+                      disabled={actualizandoId === item.id}
+                      onChange={(evento) => {
+                        const completado = evento.target.checked
+                        actualizarFormulario(item.id, 'completado', completado)
+                        guardarSeguimiento(item, { completado })
+                      }}
+                      className={`peer h-6 w-6 cursor-pointer appearance-none rounded-md border-2 transition-all ${
+                        datosForm.completado
+                          ? 'border-emerald-500 bg-emerald-500'
+                          : 'border-slate-300 hover:border-cyan-400 dark:border-slate-600 dark:hover:border-cyan-500'
+                      }`}
+                    />
+                    <svg
+                      className={`pointer-events-none absolute h-4 w-4 text-white transition-opacity ${
+                        datosForm.completado ? 'opacity-100' : 'opacity-0'
+                      }`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </label>
                   <div>
-                    <p className="font-bold text-slate-950 dark:text-white">{item.titulo}</p>
-                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                    <h4 className={`text-lg font-black tracking-tight transition-colors ${
+                      datosForm.completado ? 'text-emerald-900 dark:text-emerald-400' : 'text-slate-950 dark:text-white'
+                    }`}>
+                      {item.titulo}
+                    </h4>
+                    <p className={`mt-1 text-sm ${datosForm.completado ? 'text-emerald-700/70 dark:text-emerald-500/70' : 'text-slate-600 dark:text-slate-400'}`}>
                       {item.descripcion}
                     </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <span className="inline-flex rounded-md bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                        {item.kpi}
+                      </span>
+                      <span className="inline-flex rounded-md bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                        {item.frecuencia}
+                      </span>
+                      <span className="inline-flex rounded-md bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                        {formatearFecha(item.fecha_seguimiento, idioma)}
+                      </span>
+                    </div>
                   </div>
-                  <span
-                    className={[
-                      'rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em]',
-                      item.completado
-                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                        : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
-                    ].join(' ')}
-                  >
-                    {item.completado ? textos.completado : textos.pendiente}
-                  </span>
                 </div>
 
-                <div className="mt-3 flex flex-wrap gap-3 text-xs uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                  <span>{item.frecuencia}</span>
-                  <span>{formatearFecha(item.fecha_seguimiento, idioma)}</span>
-                  <span>
-                    {textos.kpiAsociado}:{' '}
-                    {item.kpi ? item.kpi : textos.sinKpiAsociado}
-                  </span>
-                  {item.kpi ? (
-                    <span
-                      className={
-                        kpiExiste
-                          ? 'text-emerald-700 dark:text-emerald-300'
-                          : 'text-amber-700 dark:text-amber-300'
-                      }
-                    >
-                      {kpiExiste ? textos.kpiVinculadoOk : textos.kpiVinculadoPendiente}
-                    </span>
-                  ) : null}
-                  {item.valor_actual !== null ? (
-                    <span>
-                      {item.valor_actual}
-                      {item.unidad === '%' ? '%' : ` ${item.unidad ?? ''}`.trim()}
-                      {item.meta_valor !== null
-                        ? ` / ${item.meta_valor}${item.unidad === '%' ? '%' : ` ${item.unidad ?? ''}`.trim()}`
-                        : ''}
-                    </span>
-                  ) : null}
+                <div className="flex w-full shrink-0 flex-col gap-3 sm:w-[260px]">
+                  <div className={`rounded-2xl border p-3 ${
+                    datosForm.completado 
+                      ? 'border-emerald-200/50 bg-white/60 dark:border-emerald-800/30 dark:bg-slate-900/40' 
+                      : 'border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-950/50'
+                  }`}>
+                    <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                      <span>Progreso</span>
+                      <span>Meta: {item.meta_valor}{item.unidad === '%' ? '%' : ` ${item.unidad ?? ''}`.trim()}</span>
+                    </div>
+                    <div className="mt-2 flex items-center gap-2">
+                      <input
+                        value={datosForm.valor_actual}
+                        onChange={(evento) => actualizarFormulario(item.id, 'valor_actual', evento.target.value)}
+                        onBlur={() => guardarSeguimiento(item)}
+                        placeholder="Valor actual..."
+                        className={`h-10 w-full rounded-xl border-none px-3 text-sm font-semibold outline-none transition focus:ring-2 focus:ring-cyan-500 dark:text-white ${
+                          datosForm.completado 
+                            ? 'bg-emerald-50/50 text-emerald-900 focus:bg-white dark:bg-slate-900 dark:text-emerald-400' 
+                            : 'bg-white text-slate-900 dark:bg-slate-900'
+                        }`}
+                      />
+                      <span className="whitespace-nowrap text-xs font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
+                        {item.unidad ?? '-'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </label>
+
+              <div className="border-t border-slate-100 bg-slate-50/50 p-4 dark:border-slate-800/50 dark:bg-slate-950/20">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                      {textos.justificacionLabel}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      {justificacionRecomendada
+                        ? textos.justificacionSugerida
+                        : textos.justificacionOpcional}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {justificacionRecomendada ? (
+                      <span className="rounded-full bg-amber-100 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                        {textos.justificacionRecomendada}
+                      </span>
+                    ) : null}
+                    <span className="rounded-full bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500 shadow-sm dark:bg-slate-900 dark:text-slate-400">
+                      {textoEstadoGuardado(item.id)}
+                    </span>
+                  </div>
+                </div>
+
+                <textarea
+                  value={datosForm.justificacion_respuesta}
+                  onChange={(evento) => actualizarFormulario(item.id, 'justificacion_respuesta', evento.target.value)}
+                  onBlur={() => guardarSeguimiento(item)}
+                  placeholder={
+                    justificacionRecomendada
+                      ? textos.justificacionPlaceholderGuiado
+                      : textos.justificacionPlaceholderLibre
+                  }
+                  rows={3}
+                  className={`w-full resize-none rounded-2xl border px-4 py-3 text-sm leading-6 outline-none transition focus:ring-2 focus:ring-cyan-500 ${
+                    datosForm.completado
+                      ? 'border-emerald-100 bg-white/80 text-emerald-800 placeholder-emerald-600/50 dark:border-emerald-900/40 dark:bg-slate-900 dark:text-emerald-200 dark:placeholder-emerald-700/50'
+                      : 'border-slate-200 bg-white text-slate-700 placeholder-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:placeholder-slate-600'
+                  }`}
+                />
+                <div className="mt-2 flex items-center justify-between gap-3">
+                  <p className="text-xs text-slate-400 dark:text-slate-500">
+                    {textos.justificacionAyuda}
+                  </p>
+                  <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">
+                    {longitudJustificacion}/500
+                  </span>
+                </div>
+              </div>
+            </div>
           )
         })}
       </div>
@@ -228,21 +372,14 @@ export function SeguimientoKpis({ centro, textos, idioma, onVolver }) {
             {textos.seguimientoKpisSubtitulo}
           </p>
           <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950 dark:text-white">
-            {textos.seguimientoKpisTitulo}
+            {modo === 'empleado' ? 'Mis KPIs y seguimientos' : textos.seguimientoKpisTitulo}
           </h2>
         </div>
-
-        <button
-          type="button"
-          onClick={onVolver}
-          className="inline-flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-        >
-          <ArrowLeft size={16} />
-          {textos.volverCentroKpis}
-        </button>
       </div>
 
-      <section className="grid gap-5 xl:grid-cols-3 md:grid-cols-1">
+      <TarjetaPendienteDia centro={centro} textos={textos} modo={modo} onVolver={onVolver} />
+
+      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         {resumenes.map((item) => (
           <TarjetaResumen key={item.titulo} {...item} />
         ))}
@@ -258,7 +395,6 @@ export function SeguimientoKpis({ centro, textos, idioma, onVolver }) {
               {pendientesDiario} {textos.pendiente.toLowerCase()}
             </span>
           </div>
-
           {renderItems(secciones.diario, textos.sinSeguimientosDiario)}
         </article>
 
@@ -271,7 +407,6 @@ export function SeguimientoKpis({ centro, textos, idioma, onVolver }) {
               {pendientesSemanal} {textos.pendiente.toLowerCase()}
             </span>
           </div>
-
           {renderItems(secciones.semanal, textos.sinSeguimientosSemanal)}
         </article>
       </section>
@@ -287,76 +422,10 @@ export function SeguimientoKpis({ centro, textos, idioma, onVolver }) {
                 {pendientesOtros} {textos.pendiente.toLowerCase()}
               </span>
             </div>
-
             {renderItems(secciones.otros, textos.sinSeguimientosOtros)}
           </article>
         </section>
       ) : null}
-
-      <section className="grid gap-5">
-        <article className="rounded-[30px] border border-slate-200/80 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-900">
-          <h3 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">
-            {textos.seguimientoReciente}
-          </h3>
-
-          <div className="mt-5 max-h-[70vh] space-y-4 overflow-y-auto pr-2">
-            {(centro.seguimiento_reciente ?? []).map((item) => (
-              <div
-                key={item.id}
-                className="rounded-[24px] border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950/50"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="font-bold text-slate-950 dark:text-white">{item.kpi}</p>
-                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                      {item.empleado} · {item.puesto}
-                    </p>
-                    <p className="mt-1 text-xs uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                      {item.frecuencia} · {formatearFecha(item.periodo_fin, idioma)}
-                    </p>
-                  </div>
-                  <span className="rounded-full bg-cyan-100 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300">
-                    {item.departamento}
-                  </span>
-                </div>
-
-                <div className="mt-4 grid gap-3 md:grid-cols-3">
-                  <div className="rounded-2xl bg-white px-4 py-3 dark:bg-slate-900">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                      {textos.progreso}
-                    </p>
-                    <p className="mt-2 text-sm font-bold text-slate-900 dark:text-white">
-                      {item.valor_real}
-                      {item.unidad === '%' ? '%' : ` ${item.unidad ?? ''}`.trim()}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl bg-white px-4 py-3 dark:bg-slate-900">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                      {textos.meta}
-                    </p>
-                    <p className="mt-2 text-sm font-bold text-slate-900 dark:text-white">
-                      {item.meta_valor}
-                      {item.unidad === '%' ? '%' : ` ${item.unidad ?? ''}`.trim()}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl bg-white px-4 py-3 dark:bg-slate-900">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                      {textos.cumplimiento}
-                    </p>
-                    <p className="mt-2 text-sm font-bold text-slate-900 dark:text-white">
-                      {item.cumplimiento}%
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-4">
-                  <BarraCumplimiento valor={item.cumplimiento} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </article>
-      </section>
     </div>
   )
 }

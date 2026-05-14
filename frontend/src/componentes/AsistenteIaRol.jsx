@@ -40,8 +40,19 @@ function crearMensajeBienvenida(textos) {
   }
 }
 
-export function AsistenteIaRol({ asistente, textos, idioma }) {
-  const [rolActivoId, setRolActivoId] = useState(asistente.roles?.[0]?.id ?? null)
+export function AsistenteIaRol({ asistente, textos, idioma, sesion }) {
+  const rolInicialId = (() => {
+    if (sesion?.tipo === 'empleado' && sesion?.puesto && asistente.roles?.length) {
+      const puestoNorm = sesion.puesto.toUpperCase()
+      const match = asistente.roles.find(
+        (r) => r.nombre?.toUpperCase() === puestoNorm || r.nombre?.toUpperCase().includes(puestoNorm)
+      )
+      if (match) return match.id
+    }
+    return asistente.roles?.[0]?.id ?? null
+  })()
+
+  const [rolActivoId, setRolActivoId] = useState(rolInicialId)
   const [pregunta, setPregunta] = useState('')
   const [mensajes, setMensajes] = useState([crearMensajeBienvenida(textos)])
   const [cargando, setCargando] = useState(false)
@@ -162,66 +173,90 @@ export function AsistenteIaRol({ asistente, textos, idioma }) {
 
       <section className="grid gap-5 xl:grid-cols-[0.85fr_1.15fr]">
         <div className="space-y-5">
-          <article className="rounded-[30px] border border-slate-200/80 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-900">
-            <div className="mb-5 flex items-center justify-between gap-4">
-              <h3 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">
-                {textos.rolesDisponibles}
-              </h3>
-              <span className="text-sm font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                {asistente.roles.length}
-              </span>
-            </div>
+          {sesion?.tipo === 'admin' ? (
+            <>
+              <article className="rounded-[30px] border border-slate-200/80 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-900">
+                <div className="mb-5 flex items-center justify-between gap-4">
+                  <h3 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+                    {textos.rolesDisponibles}
+                  </h3>
+                  <span className="text-sm font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    {asistente.roles.length}
+                  </span>
+                </div>
 
-            <div className="space-y-3">
-              {asistente.roles.map((rol) => (
-                <button
-                  key={rol.id}
-                  type="button"
-                  onClick={() => setRolActivoId(rol.id)}
-                  className={[
-                    'w-full rounded-[24px] border p-4 text-left transition',
-                    rol.id === rolActivo?.id
-                      ? 'border-cyan-300 bg-cyan-50 ring-2 ring-cyan-100 dark:border-cyan-700 dark:bg-cyan-950/30'
-                      : 'border-slate-200 bg-slate-50 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950/50',
-                  ].join(' ')}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-bold text-slate-950 dark:text-white">{rol.nombre}</p>
-                      <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                        {rol.departamento} · {rol.nivel}
+                <div className="space-y-3">
+                  {asistente.roles.map((rol) => (
+                    <button
+                      key={rol.id}
+                      type="button"
+                      onClick={() => setRolActivoId(rol.id)}
+                      className={[
+                        'w-full rounded-[24px] border p-4 text-left transition',
+                        rol.id === rolActivo?.id
+                          ? 'border-cyan-300 bg-cyan-50 ring-2 ring-cyan-100 dark:border-cyan-700 dark:bg-cyan-950/30'
+                          : 'border-slate-200 bg-slate-50 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950/50',
+                      ].join(' ')}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-bold text-slate-950 dark:text-white">{rol.nombre}</p>
+                          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                            {rol.departamento} · {rol.nivel}
+                          </p>
+                        </div>
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                          {textos.perfil}
+                        </span>
+                      </div>
+                      <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                        {rol.resumen}
                       </p>
-                    </div>
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                      {textos.perfil}
-                    </span>
-                  </div>
-                  <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                    {rol.resumen}
-                  </p>
-                </button>
-              ))}
-            </div>
-          </article>
+                    </button>
+                  ))}
+                </div>
+              </article>
 
-          <article className="rounded-[30px] border border-slate-200/80 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-900">
-            <h3 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">
-              {textos.alcanceAsistente}
-            </h3>
-            <div className="mt-5 space-y-4">
-              <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/50">
-                <p className="font-bold text-slate-950 dark:text-white">{asistente.alcance.titulo}</p>
-                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  {asistente.alcance.descripcion}
-                </p>
+              <article className="rounded-[30px] border border-slate-200/80 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-900">
+                <h3 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+                  {textos.alcanceAsistente}
+                </h3>
+                <div className="mt-5 space-y-4">
+                  <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/50">
+                    <p className="font-bold text-slate-950 dark:text-white">{asistente.alcance.titulo}</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                      {asistente.alcance.descripcion}
+                    </p>
+                  </div>
+                  <div className="rounded-[22px] border border-dashed border-cyan-300 bg-cyan-50 p-4 dark:border-cyan-800 dark:bg-cyan-950/20">
+                    <p className="text-sm leading-6 text-cyan-900 dark:text-cyan-200">
+                      {asistente.alcance.regla}
+                    </p>
+                  </div>
+                </div>
+              </article>
+            </>
+          ) : (
+            <article className="rounded-[30px] border border-slate-200/80 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-900">
+              <h3 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+                Tu Asistente Exclusivo
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                Este asistente ha sido configurado específicamente para apoyar tus labores como{' '}
+                <strong className="text-cyan-700 dark:text-cyan-400">{rolActivo?.nombre}</strong> en el área de{' '}
+                <strong className="text-cyan-700 dark:text-cyan-400">{rolActivo?.departamento}</strong>.
+              </p>
+              
+              <div className="mt-6 space-y-4">
+                <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/50">
+                  <p className="font-bold text-slate-950 dark:text-white">Alcance de tu Asistente</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                    {asistente.alcance.descripcion}
+                  </p>
+                </div>
               </div>
-              <div className="rounded-[22px] border border-dashed border-cyan-300 bg-cyan-50 p-4 dark:border-cyan-800 dark:bg-cyan-950/20">
-                <p className="text-sm leading-6 text-cyan-900 dark:text-cyan-200">
-                  {asistente.alcance.regla}
-                </p>
-              </div>
-            </div>
-          </article>
+            </article>
+          )}
         </div>
 
         <div className="space-y-5">
